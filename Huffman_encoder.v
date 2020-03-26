@@ -7,9 +7,9 @@
 `define GEN_CODE 3'b100	//由哈夫曼树获得编码表
 
 //压缩后文件头格式：符号8bit+码长3bit+码字1-8bit
-`define SEND_SYMBOLS 3'b101//发送符号
+//`define SEND_SYMBOLS 3'b101//发送符号
 `define SEND_CODE 3'b110	//发送编码
-`define SEND_LENGTH 3'b111	//发送长度
+//`define SEND_LENGTH 3'b111	//发送长度
 
 
 module Huffman_encoder(
@@ -23,6 +23,8 @@ module Huffman_encoder(
 			output reg [bit_width:0]data_out_symbol,    //输出-符号
             output reg [3:0]data_out_length,        //输出-码长
             output reg [bit_width:0]data_out_code,  //输出-码字
+
+            output reg data_out_state,
 			
 			);	
 
@@ -56,17 +58,14 @@ reg [bit_width:0]sym,temp1,temp2;//临时存放变量
 reg [0:2*bit_width+2]code_list[max_symbol:0];//码字表
 reg [bit_width:0]code_length[max_symbol:0];//码长表
 
-
-integer step = 0;								//Number of steps of tree building algorithm	构建哈夫曼树所用步数
-reg [bit_width:0]pos,newpos = 0;				//Variables to hold values of positions in pair table
-
+reg [bit_width+1:0]temp_parent,temp_child;
 
 integer i= 32'h0;	
 integer j= 32'h0;
 integer k= 32'h0;//循环变量
 
 reg flag_exist = 0;//当前符号是否存在于表中的标志位 1=存在 0=不存在
-integer pair_count= 0;
+
 
 
 always @(posedge clock) begin
@@ -126,6 +125,9 @@ always @(posedge clock) begin
 		
 
 	end
+    else begin
+        state = `SORT;
+    end
 	end
 	
 	
@@ -155,21 +157,24 @@ always @(posedge clock) begin
     end
     //for(i=1;i<symbol_count+1;i=i+1)
     //$display("huffmantree node :",huffmantree_node_symbol[i]);
-    
+    state = `BUILD_TREE;
     end
 
 	`BUILD_TREE: begin
     //构建哈夫曼树
-    min1 = 9'1;
-    min2 = 9'1;
+
+    min1 = 10'd1024;
+    min2 = 10'd1024;//最小的两项（的下标）
+    //找出最小项1
     for(i=1;i<symbol_list_index;i++)begin
-        if(huffmantree_node_parent[i] == 0 && huffmantree_node_tag[i] != 1'b1)begin
+        if(huffmantree_node_parent[i] == 0 && huffmantree_node_tag[i] != 1'b1)begin//父节点为0且tag为0
             if(huffmantree_node_weight[i] < huffmantree_node_weight[min1])begin
                 min1 = i;
             end
         end
     end
     huffmantree_node_tag[min1] = 1'b1;
+    //找出最小项2
     for(i=1;i<symbol_list_index;i++)begin
         if(huffmantree_node_parent[i] == 0 && huffmantree_node_tag[i] != 1'b1)begin
             if(huffmantree_node_weight[i] < huffmantree_node_weight[min2])begin
@@ -178,29 +183,47 @@ always @(posedge clock) begin
         end
     end
      huffmantree_node_tag[min2] = 1'b1;
-
+    //组合新节点
     huffmantree_node_weight[symbol_list_index] = huffmantree_node_weight[min1] + huffmantree_node_weight[min2];
     huffmantree_node_lchild[symbol_list_index] = min1;
     huffmantree_node_rchild[symbol_list_index] = min2;
-
+    //最小项父节点为新节点
     huffmantree_node_parent[min1] = symbol_list_index;
     huffmantree_node_parent[min2] = symbol_list_index;
 	
 
     symbol_list_index = symbol_list_index + 1;
 	
-	`GEN_CODE: begin
-		
-	end
+    if(min1 == 10'd1024 && min2 == 10'd1024)begin
+        //进入下一环节
+        state = `GEN_CODE;
+    end
 
-    `SEND_SYMBOLS: begin
-	
-	end
-	`SEND_LENGTH: begin
-	
+
+	`GEN_CODE: begin
+		//生成哈夫曼编码
+            i = 1;
+            temp_parent = huffmantree_node_parent[i];
+            temp_child = i;
+            while (temp_parent != 'b0) begin
+                if(huffmantree_node_lchild[temp_parent] == temp_child)begin
+                    code_list[i-1] = code_list[i-1]<<1 | 'b0;
+                end else if(huffmantree_node_rchild[temp_parent] == temp_child)begin
+                    code_list[i-1] = code_list[i-1]<<1 | 'b1;
+                end
+                temp_child = temp_parent;
+                temp_parent = huffmantree_node_parent[temp_parent];
+            end
+           $display("huffman code :", code_list[i-1]);
+           i = i+1;
+           if(i == symbol_count)begin
+                state = `SEND_CODE;
+           end
+        
 	end
 	
 	`SEND_CODE: begin
+        
 	
 	end
 	
