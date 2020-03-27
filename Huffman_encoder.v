@@ -197,19 +197,22 @@ always @(posedge clock) begin
     if(min1 == 10'd1024 && min2 == 10'd1024)begin
         //进入下一环节
         state = `GEN_CODE;
+        i = 1;
     end
 
 
 	`GEN_CODE: begin
 		//生成哈夫曼编码
-            i = 1;
+            
             temp_parent = huffmantree_node_parent[i];
             temp_child = i;
             while (temp_parent != 'b0) begin
                 if(huffmantree_node_lchild[temp_parent] == temp_child)begin
                     code_list[i-1] = code_list[i-1]<<1 | 'b0;
+                    code_length[i-1] = code_length + 1;
                 end else if(huffmantree_node_rchild[temp_parent] == temp_child)begin
                     code_list[i-1] = code_list[i-1]<<1 | 'b1;
+                    code_length[i-1] = code_length + 1;
                 end
                 temp_child = temp_parent;
                 temp_parent = huffmantree_node_parent[temp_parent];
@@ -218,12 +221,23 @@ always @(posedge clock) begin
            i = i+1;
            if(i == symbol_count)begin
                 state = `SEND_CODE;
+                i=0;
+                data_out_state = 1;
            end
         
 	end
 	
 	`SEND_CODE: begin
-        
+        if(i < symbol_count)begin
+            data_out_symbol = symbol_list[i];
+            data_out_length = code_length[i];
+            data_out_code = code_list[i];
+            i = i+1;
+        end
+        else begin
+            data_out_state = 0;
+        end
+
 	
 	end
 	
