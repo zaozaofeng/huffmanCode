@@ -9,11 +9,12 @@ module Huffman_tb;
 	reg data_enable;
 
 	// Outputs
-    wire [bit_width:0]data_out_symbol,    //输出-符号
-    wire [3:0]data_out_length,        //输出-码长
-    wire [bit_width:0]data_out_code,  //输出-码字
+    wire [7:0]data_out_symbol;    //输出-符号
+    wire [3:0]data_out_length;        //输出-码长
+    wire [7:0]data_out_code;  //输出-码字
+	wire [2:0]out_state;
 
-    wire data_out_state,
+    wire data_out_state;
    
 	integer i,handle;
 	integer seed = 1;
@@ -26,7 +27,8 @@ module Huffman_tb;
 		.data_out_symbol(data_out_symbol), 
 		.data_out_length(data_out_length), 
 		.data_out_code(data_out_code),
-        .data_out_state(data_out_state)
+        .data_out_state(data_out_state),
+		.out_state(out_state)
 	);
 
 
@@ -37,7 +39,7 @@ module Huffman_tb;
 	initial begin
 		// Initialize Inputs
 		
-		$log("verilog.log");
+		//$log("verilog.log");
 		clock = 0;
 		data_in = 0;
 		data_enable = 0;
@@ -45,8 +47,7 @@ module Huffman_tb;
 		handle = $fopen ("Output.txt");
 		handle = handle | 1;
 		
-		$fmonitor(1,"clock:",clock,"data_enable:", data_enable,"data_in:%b",data_in," data_out_state:",data_out_state,"  
-         data_out_code: %b",data_out_code,"data_out_symbol:%b",data_out_symbol);
+		$fmonitor(1,"clock:",clock,"  data_enable:", data_enable,"  data_in:%b",data_in,"  data_out_state:",data_out_state,"  data_out_code: %b",data_out_code,"  data_out_symbol:%b",data_out_symbol);
 		
 		for(i=0;i<22;i=i+1) begin 
 				#20 data_enable=1;
@@ -57,7 +58,7 @@ module Huffman_tb;
 		data_in = 'bz;
 		data_enable = 0;
 		
-		#2100;
+		#2550;
 		$finish;
 		$fclose(handle);
 
