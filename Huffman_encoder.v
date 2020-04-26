@@ -409,7 +409,6 @@ always @(posedge clock) begin
             
             
         end
-
         $display("--------------------close file-----------------");
         $fclose(fp_r); //关闭文件
         state = `IDLE;
