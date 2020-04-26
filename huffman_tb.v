@@ -81,7 +81,6 @@ module Huffman_tb;
 			//$fclose(fp_r);//关闭已打开的文件
 			//$fclose(fp_w);
 
-		
 		$fmonitor(1,"clock:",clock,"  data_enable:", data_enable,"  data_in:%b",data_in,"  data_out_state:",data_out_state,"  data_out_code: %b",data_out_code,"  data_out_symbol:%b",data_out_symbol);
 		
 		/*for(i=0;i<22;i=i+1) begin 
